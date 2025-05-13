@@ -2,69 +2,300 @@
 
 {% block title %}Train Model{% endblock %}
 
+{% block head %}
+<style>
+    .model-layer {
+        position: relative;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        background: rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .model-layer:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.08);
+    }
+    
+    .model-layer-icon {
+        position: absolute;
+        top: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4890eb, #2c5ce0);
+        color: white;
+        box-shadow: 0 4px 10px rgba(40, 90, 220, 0.3);
+    }
+    
+    .training-progress {
+        position: relative;
+        padding-left: 30px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .training-progress::before {
+        content: '';
+        position: absolute;
+        left: 10px;
+        top: 0;
+        height: 100%;
+        width: 2px;
+        background: linear-gradient(to bottom, #4890eb, rgba(44, 92, 224, 0.2));
+    }
+    
+    .training-progress-marker {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4890eb, #2c5ce0);
+        border: 3px solid var(--bs-dark);
+    }
+    
+    .metrics-card {
+        border-radius: 12px;
+        border: none;
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .metrics-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .metric-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #4890eb, #2c5ce0);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    .parameter-input {
+        position: relative;
+        margin-bottom: 2rem;
+    }
+    
+    .parameter-input label {
+        position: absolute;
+        top: -10px;
+        left: 15px;
+        padding: 0 10px;
+        background-color: var(--bs-body-bg);
+        font-size: 0.85rem;
+        z-index: 1;
+    }
+    
+    .chart-container {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-10">
         <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h2 class="mb-0">Train Emotion Recognition Model</h2>
+            <div class="card-header">
+                <div class="d-flex align-items-center justify-content-between flex-wrap">
+                    <div>
+                        <h2 class="mb-1">Train <span class="header-highlight">Emotion</span> Recognition Model</h2>
+                        <p class="text-muted mb-0">Configure and train your custom speech emotion recognition model</p>
+                    </div>
+                    <div class="mt-2 mt-md-0">
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Home
+                        </a>
+                    </div>
+                </div>
             </div>
             <div class="card-body">
                 
                 {% if trained %}
                 <!-- Training Results Section -->
-                <div class="alert alert-success mb-4">
-                    <h4 class="alert-heading"><i class="fas fa-check-circle me-2"></i>Training Complete!</h4>
-                    <p>The model has been trained successfully. Validation accuracy: <strong>{{ accuracy|round(2) }}%</strong></p>
-                </div>
-                
-                <div class="row mb-4">
-                    <div class="col-md-12">
-                        <h4 class="mb-3">Confusion Matrix</h4>
-                        <div class="chart-container">
-                            {% if cm_chart %}
-                                <img src="data:image/png;base64,{{ cm_chart }}" alt="Confusion matrix" class="img-fluid">
-                            {% else %}
-                                <div class="alert alert-warning">Chart generation failed</div>
-                            {% endif %}
+                <div class="alert alert-success">
+                    <div class="d-flex">
+                        <div class="display-4 me-3">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <h4 class="alert-heading mb-1">Training Complete!</h4>
+                            <p class="mb-0">Your model has been successfully trained and is ready to use.</p>
                         </div>
                     </div>
                 </div>
                 
-                <div class="row mb-4">
+                <div class="row mb-5">
+                    <div class="col-md-4 mb-4 mb-md-0">
+                        <div class="card metrics-card h-100">
+                            <div class="card-header bg-dark">
+                                <h5 class="mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>Accuracy</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="metric-value mb-2">{{ accuracy|round(2) }}%</div>
+                                <p class="mb-0 text-muted">Validation accuracy</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-4 mb-md-0">
+                        <div class="card metrics-card h-100">
+                            <div class="card-header bg-dark">
+                                <h5 class="mb-0"><i class="fas fa-cogs me-2 text-primary"></i>Parameters</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="metric-value mb-2">{{ history.accuracy|length }}</div>
+                                <p class="mb-0 text-muted">Training epochs</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card metrics-card h-100">
+                            <div class="card-header bg-dark">
+                                <h5 class="mb-0"><i class="fas fa-brain me-2 text-primary"></i>Model Status</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="badge bg-success p-2 px-3 fs-6 mb-2">
+                                    <i class="fas fa-check-circle me-1"></i> Ready
+                                </div>
+                                <p class="mb-0 text-muted">Model is ready for use</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-5">
                     <div class="col-md-12">
-                        <h4 class="mb-3">Training History</h4>
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Epoch</th>
-                                    <th>Training Loss</th>
-                                    <th>Training Accuracy</th>
-                                    <th>Validation Loss</th>
-                                    <th>Validation Accuracy</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for i in range(history.accuracy|length) %}
-                                <tr>
-                                    <td>{{ i+1 }}</td>
-                                    <td>{{ history.loss[i]|round(4) }}</td>
-                                    <td>{{ (history.accuracy[i] * 100)|round(2) }}%</td>
-                                    <td>{{ history.val_loss[i]|round(4) }}</td>
-                                    <td>{{ (history.val_accuracy[i] * 100)|round(2) }}%</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                        <div class="card metrics-card">
+                            <div class="card-header bg-dark">
+                                <h5 class="mb-0"><i class="fas fa-th me-2 text-primary"></i>Confusion Matrix</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    {% if cm_chart %}
+                                        <img src="data:image/png;base64,{{ cm_chart }}" alt="Confusion matrix" class="img-fluid">
+                                    {% else %}
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            Chart generation failed
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <p class="text-muted mt-3">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    The confusion matrix shows how well the model distinguishes between different emotions. 
+                                    Diagonal elements represent correct predictions.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-5">
+                    <div class="col-md-12">
+                        <div class="card metrics-card">
+                            <div class="card-header bg-dark">
+                                <h5 class="mb-0"><i class="fas fa-history me-2 text-primary"></i>Training History</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Epoch</th>
+                                                <th>Training Loss</th>
+                                                <th>Training Accuracy</th>
+                                                <th>Validation Loss</th>
+                                                <th>Validation Accuracy</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for i in range(history.accuracy|length) %}
+                                            <tr class="epoch-row" data-epoch="{{ i+1 }}">
+                                                <td><span class="badge bg-primary">{{ i+1 }}</span></td>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="progress flex-grow-1 me-2" style="height: 5px;">
+                                                            <div class="progress-bar bg-danger" role="progressbar" 
+                                                                style="width: {{ (history.loss[i] / 2) * 100 }}%" 
+                                                                aria-valuenow="{{ history.loss[i] }}" 
+                                                                aria-valuemin="0" 
+                                                                aria-valuemax="2">
+                                                            </div>
+                                                        </div>
+                                                        <span>{{ history.loss[i]|round(4) }}</span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="progress flex-grow-1 me-2" style="height: 5px;">
+                                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                                style="width: {{ history.accuracy[i] * 100 }}%" 
+                                                                aria-valuenow="{{ history.accuracy[i] * 100 }}" 
+                                                                aria-valuemin="0" 
+                                                                aria-valuemax="100">
+                                                            </div>
+                                                        </div>
+                                                        <span>{{ (history.accuracy[i] * 100)|round(2) }}%</span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="progress flex-grow-1 me-2" style="height: 5px;">
+                                                            <div class="progress-bar bg-warning" role="progressbar" 
+                                                                style="width: {{ (history.val_loss[i] / 2) * 100 }}%" 
+                                                                aria-valuenow="{{ history.val_loss[i] }}" 
+                                                                aria-valuemin="0" 
+                                                                aria-valuemax="2">
+                                                            </div>
+                                                        </div>
+                                                        <span>{{ history.val_loss[i]|round(4) }}</span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="progress flex-grow-1 me-2" style="height: 5px;">
+                                                            <div class="progress-bar bg-primary" role="progressbar" 
+                                                                style="width: {{ history.val_accuracy[i] * 100 }}%" 
+                                                                aria-valuenow="{{ history.val_accuracy[i] * 100 }}" 
+                                                                aria-valuemin="0" 
+                                                                aria-valuemax="100">
+                                                            </div>
+                                                        </div>
+                                                        <span>{{ (history.val_accuracy[i] * 100)|round(2) }}%</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="row">
-                    <div class="col-12 text-center">
-                        <a href="{{ url_for('train_page') }}" class="btn btn-primary">
+                    <div class="col-12 d-flex justify-content-center gap-3">
+                        <a href="{{ url_for('train_page') }}" class="btn btn-primary btn-lg">
                             <i class="fas fa-sync me-2"></i>Train Again
                         </a>
-                        <a href="{{ url_for('index') }}" class="btn btn-secondary ms-2">
+                        <a href="{{ url_for('index') }}" class="btn btn-success btn-lg">
                             <i class="fas fa-microphone me-2"></i>Test Model
                         </a>
                     </div>
@@ -72,69 +303,27 @@
                 
                 {% else %}
                 <!-- Training Form Section -->
-                <div class="alert alert-info mb-4">
-                    <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>About Model Training</h5>
-                    <p>
-                        This page allows you to train the LSTM-based emotion recognition model. 
-                        In a production environment, you would upload your labeled dataset and configure training parameters.
-                    </p>
-                    <p class="mb-0">
-                        For this demonstration, the training will use a simulated dataset to show the training process.
-                    </p>
-                </div>
-                
-                <form action="{{ url_for('start_training') }}" method="post" class="mb-4">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="epochs" class="form-label">Number of Epochs</label>
-                                <input type="number" class="form-control" id="epochs" name="epochs" min="1" max="100" value="10" required>
-                                <div class="form-text">Number of complete passes through the training dataset</div>
+                <div class="row mb-5">
+                    <div class="col-md-6 mb-4 mb-md-0">
+                        <div class="card metrics-card h-100">
+                            <div class="card-header bg-dark">
+                                <h5 class="mb-0"><i class="fas fa-info-circle me-2 text-primary"></i>About Model Training</h5>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="batchSize" class="form-label">Batch Size</label>
-                                <select class="form-select" id="batchSize" name="batch_size">
-                                    <option value="16">16</option>
-                                    <option value="32" selected>32</option>
-                                    <option value="64">64</option>
-                                    <option value="128">128</option>
-                                </select>
-                                <div class="form-text">Number of samples per gradient update</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="accordion mb-4" id="modelAccordion">
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="headingModel">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseModel" aria-expanded="false" aria-controls="collapseModel">
-                                    Advanced Model Settings
-                                </button>
-                            </h2>
-                            <div id="collapseModel" class="accordion-collapse collapse" aria-labelledby="headingModel" data-bs-parent="#modelAccordion">
-                                <div class="accordion-body">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="learningRate" class="form-label">Learning Rate</label>
-                                                <select class="form-select" id="learningRate" name="learning_rate">
-                                                    <option value="0.01">0.01</option>
-                                                    <option value="0.001" selected>0.001</option>
-                                                    <option value="0.0001">0.0001</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="dropout" class="form-label">Dropout Rate</label>
-                                                <select class="form-select" id="dropout" name="dropout">
-                                                    <option value="0.2">0.2</option>
-                                                    <option value="0.3" selected>0.3</option>
-                                                    <option value="0.5">0.5</option>
-                                                </select>
-                                            </div>
+                            <div class="card-body">
+                                <p>
+                                    This page allows you to train a custom emotion recognition model for speech analysis.
+                                    Adjust the parameters below to configure your training process.
+                                </p>
+                                <p>
+                                    For this demonstration, we're using a simulated dataset with examples of different emotions
+                                    to show how the training process works in a real-world scenario.
+                                </p>
+                                <div class="alert alert-info">
+                                    <div class="d-flex">
+                                        <i class="fas fa-lightbulb text-warning me-3 fs-4"></i>
+                                        <div>
+                                            <h6 class="alert-heading mb-1">Training Tip</h6>
+                                            <p class="mb-0">Higher epoch values will generally improve accuracy but may lead to overfitting. Start with 10-20 epochs for testing.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -142,36 +331,194 @@
                         </div>
                     </div>
                     
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary" id="trainButton">
-                            <i class="fas fa-cogs me-2"></i>Start Training
-                        </button>
+                    <div class="col-md-6">
+                        <div class="card metrics-card h-100">
+                            <div class="card-header bg-dark">
+                                <h5 class="mb-0"><i class="fas fa-flask me-2 text-primary"></i>Training Process</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="training-progress">
+                                    <div class="training-progress-marker"></div>
+                                    <h6 class="fw-bold">Data Preparation</h6>
+                                    <p class="text-muted">Audio features are extracted and normalized</p>
+                                </div>
+                                
+                                <div class="training-progress">
+                                    <div class="training-progress-marker"></div>
+                                    <h6 class="fw-bold">Model Initialization</h6>
+                                    <p class="text-muted">Neural network layers are configured</p>
+                                </div>
+                                
+                                <div class="training-progress">
+                                    <div class="training-progress-marker"></div>
+                                    <h6 class="fw-bold">Training Iterations</h6>
+                                    <p class="text-muted">Model learns from training data over multiple epochs</p>
+                                </div>
+                                
+                                <div class="training-progress">
+                                    <div class="training-progress-marker"></div>
+                                    <h6 class="fw-bold">Validation</h6>
+                                    <p class="text-muted">Model is tested against validation data</p>
+                                </div>
+                                
+                                <div class="training-progress">
+                                    <div class="training-progress-marker"></div>
+                                    <h6 class="fw-bold">Deployment</h6>
+                                    <p class="text-muted">Trained model is ready for emotion recognition</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </form>
+                </div>
                 
-                <div class="card mt-4">
-                    <div class="card-header bg-secondary text-white">
-                        Model Architecture
+                <div class="row mb-5">
+                    <div class="col-md-12">
+                        <div class="card metrics-card">
+                            <div class="card-header bg-dark">
+                                <h5 class="mb-0"><i class="fas fa-sliders-h me-2 text-primary"></i>Training Parameters</h5>
+                            </div>
+                            <div class="card-body">
+                                <form action="{{ url_for('start_training') }}" method="post" class="mb-4" id="trainingForm">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="parameter-input p-3 border rounded">
+                                                <label for="epochs" class="text-primary fw-bold">Number of Epochs</label>
+                                                <input type="number" class="form-control form-control-lg" id="epochs" name="epochs" min="1" max="100" value="20" required>
+                                                <div class="form-text mt-2">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    Number of complete passes through the training dataset
+                                                </div>
+                                                <div class="mt-3">
+                                                    <div id="epochSlider" class="range-slider"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="parameter-input p-3 border rounded">
+                                                <label for="batchSize" class="text-primary fw-bold">Batch Size</label>
+                                                <select class="form-select form-select-lg" id="batchSize" name="batch_size">
+                                                    <option value="16">16 - Small</option>
+                                                    <option value="32" selected>32 - Medium</option>
+                                                    <option value="64">64 - Large</option>
+                                                    <option value="128">128 - Very Large</option>
+                                                </select>
+                                                <div class="form-text mt-2">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    Number of samples per gradient update
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="accordion mt-4 mb-4" id="modelAccordion">
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header" id="headingModel">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                                        data-bs-target="#collapseModel" aria-expanded="false" aria-controls="collapseModel">
+                                                    <i class="fas fa-cogs me-2"></i> Advanced Model Settings
+                                                </button>
+                                            </h2>
+                                            <div id="collapseModel" class="accordion-collapse collapse" aria-labelledby="headingModel" 
+                                                data-bs-parent="#modelAccordion">
+                                                <div class="accordion-body">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="parameter-input p-3 border rounded">
+                                                                <label for="learningRate" class="text-primary fw-bold">Learning Rate</label>
+                                                                <select class="form-select form-select-lg" id="learningRate" name="learning_rate">
+                                                                    <option value="0.01">0.01 - Fast but potentially unstable</option>
+                                                                    <option value="0.001" selected>0.001 - Balanced</option>
+                                                                    <option value="0.0001">0.0001 - Slow but stable</option>
+                                                                </select>
+                                                                <div class="form-text mt-2">
+                                                                    <i class="fas fa-info-circle me-1"></i>
+                                                                    Controls how quickly the model adapts to the problem
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="parameter-input p-3 border rounded">
+                                                                <label for="dropout" class="text-primary fw-bold">Dropout Rate</label>
+                                                                <select class="form-select form-select-lg" id="dropout" name="dropout">
+                                                                    <option value="0.2">0.2 - Low regularization</option>
+                                                                    <option value="0.3" selected>0.3 - Medium regularization</option>
+                                                                    <option value="0.5">0.5 - High regularization</option>
+                                                                </select>
+                                                                <div class="form-text mt-2">
+                                                                    <i class="fas fa-info-circle me-1"></i>
+                                                                    Prevents overfitting by randomly dropping connections during training
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary btn-lg py-3" id="trainButton">
+                                            <i class="fas fa-cogs me-2"></i>Start Training Process
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <h5>LSTM-based Emotion Recognition Model</h5>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">
-                                <i class="fas fa-layer-group me-2"></i><strong>Input Layer:</strong> Time series of audio features
-                            </li>
-                            <li class="list-group-item">
-                                <i class="fas fa-layer-group me-2"></i><strong>LSTM Layer 1:</strong> 128 units with batch normalization and dropout
-                            </li>
-                            <li class="list-group-item">
-                                <i class="fas fa-layer-group me-2"></i><strong>LSTM Layer 2:</strong> 64 units with batch normalization and dropout
-                            </li>
-                            <li class="list-group-item">
-                                <i class="fas fa-layer-group me-2"></i><strong>Dense Layer:</strong> 64 units with ReLU activation
-                            </li>
-                            <li class="list-group-item">
-                                <i class="fas fa-layer-group me-2"></i><strong>Output Layer:</strong> 7 units with softmax activation (one per emotion)
-                            </li>
-                        </ul>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card metrics-card">
+                            <div class="card-header bg-dark">
+                                <h5 class="mb-0"><i class="fas fa-network-wired me-2 text-primary"></i>Model Architecture</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 offset-md-3">
+                                        <div class="model-layer text-center">
+                                            <div class="model-layer-icon">
+                                                <i class="fas fa-arrow-down"></i>
+                                            </div>
+                                            <h6>Input Layer</h6>
+                                            <p class="mb-0 text-muted">Audio features (MFCC, spectral features, etc.)</p>
+                                        </div>
+                                        
+                                        <div class="model-layer text-center">
+                                            <div class="model-layer-icon">
+                                                <i class="fas fa-brain"></i>
+                                            </div>
+                                            <h6>LSTM Layer 1</h6>
+                                            <p class="mb-0 text-muted">128 units with batch normalization</p>
+                                        </div>
+                                        
+                                        <div class="model-layer text-center">
+                                            <div class="model-layer-icon">
+                                                <i class="fas fa-brain"></i>
+                                            </div>
+                                            <h6>LSTM Layer 2</h6>
+                                            <p class="mb-0 text-muted">64 units with dropout</p>
+                                        </div>
+                                        
+                                        <div class="model-layer text-center">
+                                            <div class="model-layer-icon">
+                                                <i class="fas fa-network-wired"></i>
+                                            </div>
+                                            <h6>Dense Layer</h6>
+                                            <p class="mb-0 text-muted">64 units with ReLU activation</p>
+                                        </div>
+                                        
+                                        <div class="model-layer text-center">
+                                            <div class="model-layer-icon">
+                                                <i class="fas fa-chart-pie"></i>
+                                            </div>
+                                            <h6>Output Layer</h6>
+                                            <p class="mb-0 text-muted">7 units (emotions) with softmax activation</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 {% endif %}
@@ -184,15 +531,99 @@
 
 {% block scripts %}
 <script>
-    // Show loading indicator when training starts
     document.addEventListener('DOMContentLoaded', function() {
-        const trainForm = document.querySelector('form');
+        // Show loading indicator when training starts
+        const trainForm = document.getElementById('trainingForm');
         const trainButton = document.getElementById('trainButton');
         
         if (trainForm && trainButton) {
             trainForm.addEventListener('submit', function() {
-                trainButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Training...';
+                // Update button
+                trainButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Training in Progress...';
                 trainButton.disabled = true;
+                
+                // Add progress message
+                const progressMsg = document.createElement('div');
+                progressMsg.className = 'alert alert-info mt-3';
+                progressMsg.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <div class="spinner-border text-primary me-3" role="status" aria-hidden="true"></div>
+                        <div>
+                            <h5 class="mb-1">Training in progress</h5>
+                            <p class="mb-0">This may take several minutes. Please don't close this page.</p>
+                        </div>
+                    </div>
+                `;
+                
+                this.appendChild(progressMsg);
+            });
+        }
+        
+        // Apply animation to model layers
+        const modelLayers = document.querySelectorAll('.model-layer');
+        if (modelLayers.length > 0) {
+            modelLayers.forEach((layer, index) => {
+                layer.style.opacity = '0';
+                layer.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    layer.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    layer.style.opacity = '1';
+                    layer.style.transform = 'translateY(0)';
+                }, 300 + (index * 150));
+            });
+        }
+        
+        // Animate training progress indicators
+        const progressMarkers = document.querySelectorAll('.training-progress');
+        if (progressMarkers.length > 0) {
+            progressMarkers.forEach((marker, index) => {
+                marker.style.opacity = '0';
+                marker.style.transform = 'translateX(-10px)';
+                
+                setTimeout(() => {
+                    marker.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    marker.style.opacity = '1';
+                    marker.style.transform = 'translateX(0)';
+                }, 500 + (index * 200));
+            });
+        }
+        
+        // Animate table rows in the training history
+        const tableRows = document.querySelectorAll('.epoch-row');
+        if (tableRows.length > 0) {
+            tableRows.forEach((row, index) => {
+                row.style.opacity = '0';
+                
+                setTimeout(() => {
+                    row.style.transition = 'opacity 0.3s ease';
+                    row.style.opacity = '1';
+                }, 100 + (index * 50));
+            });
+        }
+        
+        // Update epoch input based on slider value
+        const epochInput = document.getElementById('epochs');
+        const epochSlider = document.getElementById('epochSlider');
+        
+        if (epochInput && epochSlider) {
+            // Highlight epochs input field when chosen
+            epochInput.addEventListener('focus', function() {
+                this.parentNode.style.boxShadow = '0 0 0 3px rgba(44, 92, 224, 0.25)';
+            });
+            
+            epochInput.addEventListener('blur', function() {
+                this.parentNode.style.boxShadow = 'none';
+            });
+            
+            // Validate epochs input
+            epochInput.addEventListener('input', function() {
+                const value = parseInt(this.value);
+                if (isNaN(value) || value < 1) {
+                    this.value = 1;
+                } else if (value > 100) {
+                    this.value = 100;
+                }
             });
         }
     });
