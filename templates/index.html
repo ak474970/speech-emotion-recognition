@@ -4,32 +4,55 @@
 
 {% block head %}
 <style>
-    #recordingIndicator {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background-color: red;
+    /* These styles are now handled in the main CSS file */
+    .app-icon-container {
+        width: 85px;
+        height: 85px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #4890eb, #2c5ce0);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto 1.5rem;
+        box-shadow: 0 10px 20px rgba(44, 92, 224, 0.2);
+    }
+    
+    .emotion-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0;
+    }
+    
+    .emotion-item {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 1rem 0.75rem;
+        text-align: center;
+        transition: all 0.2s;
+    }
+    
+    .emotion-item:hover {
+        transform: translateY(-5px);
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .header-highlight {
+        position: relative;
         display: inline-block;
-        margin-right: 10px;
-        animation: pulse 1s infinite;
     }
     
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.3; }
-        100% { opacity: 1; }
-    }
-    
-    .recorder-container {
-        border: 1px solid var(--bs-border-color);
-        border-radius: 0.375rem;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        background-color: var(--bs-dark-bg-subtle);
-    }
-    
-    .tab-pane {
-        padding: 1.5rem;
+    .header-highlight::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 8px;
+        bottom: 0;
+        left: 0;
+        background: linear-gradient(135deg, #4890eb, #2c5ce0);
+        border-radius: 4px;
+        z-index: -1;
+        opacity: 0.3;
     }
 </style>
 {% endblock %}
@@ -38,13 +61,45 @@
 <div class="row justify-content-center">
     <div class="col-md-10">
         <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h2 class="mb-0">Speech Emotion Recognition</h2>
+            <div class="card-header">
+                <div class="text-center">
+                    <div class="app-icon-container">
+                        <i class="fas fa-microphone text-white fa-3x"></i>
+                    </div>
+                    <h2 class="mb-2">Speech <span class="header-highlight">Emotion</span> Recognition</h2>
+                    <p class="lead text-muted">Analyze speech to detect emotions using audio processing and AI.</p>
+                </div>
             </div>
             <div class="card-body">
-                <div class="text-center mb-4">
-                    <i class="fas fa-microphone fa-4x mb-3 text-primary"></i>
-                    <p class="lead">Analyze speech to detect emotions using audio processing and machine learning.</p>
+                <div class="emotion-grid mb-4">
+                    <div class="emotion-item">
+                        <i class="fas fa-angry fa-2x text-danger mb-2"></i>
+                        <div>Angry</div>
+                    </div>
+                    <div class="emotion-item">
+                        <i class="fas fa-dizzy fa-2x text-muted mb-2"></i>
+                        <div>Disgust</div>
+                    </div>
+                    <div class="emotion-item">
+                        <i class="fas fa-grimace fa-2x text-warning mb-2"></i>
+                        <div>Fear</div>
+                    </div>
+                    <div class="emotion-item">
+                        <i class="fas fa-smile-beam fa-2x text-success mb-2"></i>
+                        <div>Happy</div>
+                    </div>
+                    <div class="emotion-item">
+                        <i class="fas fa-meh fa-2x text-secondary mb-2"></i>
+                        <div>Neutral</div>
+                    </div>
+                    <div class="emotion-item">
+                        <i class="fas fa-sad-tear fa-2x text-info mb-2"></i>
+                        <div>Sad</div>
+                    </div>
+                    <div class="emotion-item">
+                        <i class="fas fa-surprise fa-2x text-primary mb-2"></i>
+                        <div>Surprise</div>
+                    </div>
                 </div>
                 
                 <ul class="nav nav-tabs" id="inputTabs" role="tablist">
@@ -71,18 +126,24 @@
                     </li>
                 </ul>
                 
-                <div class="tab-content" id="inputTabsContent">
+                <div class="tab-content p-4" id="inputTabsContent">
                     <!-- Upload Tab -->
                     <div class="tab-pane fade show active" id="upload" role="tabpanel" aria-labelledby="upload-tab">
                         <form action="{{ url_for('predict') }}" method="post" enctype="multipart/form-data" class="mb-4">
-                            <div class="mb-3">
-                                <label for="audioFile" class="form-label">Select Audio File</label>
-                                <input class="form-control" type="file" id="audioFile" name="file" accept=".wav,.mp3,.ogg" required>
-                                <div class="form-text">Supported formats: WAV, MP3, OGG (max size: 16MB)</div>
+                            <div class="mb-4">
+                                <label for="audioFile" class="form-label fw-bold">Select Audio File</label>
+                                <div class="file-upload-container p-4 border rounded text-center bg-dark">
+                                    <div class="mb-3">
+                                        <i class="fas fa-file-audio fa-3x mb-3 text-primary"></i>
+                                        <p>Drag & drop your audio file or click to browse</p>
+                                    </div>
+                                    <input class="form-control" type="file" id="audioFile" name="file" accept=".wav,.mp3,.ogg" required>
+                                    <div class="form-text mt-2">Supported formats: WAV, MP3, OGG (max size: 16MB)</div>
+                                </div>
                             </div>
                             
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary btn-lg">
                                     <i class="fas fa-play-circle me-2"></i>Analyze Emotion
                                 </button>
                             </div>
@@ -91,46 +152,71 @@
                     
                     <!-- Record Tab -->
                     <div class="tab-pane fade" id="record" role="tabpanel" aria-labelledby="record-tab">
-                        <div class="recorder-container text-center">
+                        <div class="recorder-container">
                             <div id="recordingStatus" class="mb-3 d-none">
-                                <span id="recordingIndicator"></span>
-                                <span class="fw-bold">Recording...</span>
-                                <span id="recordingTime">00:00</span>
+                                <div class="d-flex align-items-center justify-content-center mb-3">
+                                    <span id="recordingIndicator" class="me-2"></span>
+                                    <span class="fw-bold fs-5">Recording...</span>
+                                </div>
+                                <div class="badge bg-dark fs-6 px-3 py-2 mb-3" id="recordingTime">00:00</div>
+                                <div class="progress mb-3" style="height: 6px;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" id="recordingProgress" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
                             </div>
                             
                             <div id="recordingControls">
-                                <button id="startRecording" class="btn btn-danger btn-lg mb-3">
-                                    <i class="fas fa-microphone me-2"></i>Start Recording
-                                </button>
+                                <div class="mb-4 text-center">
+                                    <i class="fas fa-microphone-alt fa-4x text-danger mb-3"></i>
+                                    <h4>Voice Recording</h4>
+                                    <p class="text-muted">Record up to 30 seconds of speech to analyze emotion</p>
+                                </div>
                                 
-                                <button id="stopRecording" class="btn btn-secondary btn-lg mb-3 d-none">
-                                    <i class="fas fa-stop-circle me-2"></i>Stop Recording
-                                </button>
-                                
-                                <p class="text-muted small">Record up to 30 seconds of speech</p>
+                                <div class="d-flex justify-content-center gap-3">
+                                    <button id="startRecording" class="btn btn-danger btn-lg px-4">
+                                        <i class="fas fa-microphone me-2"></i>Start Recording
+                                    </button>
+                                    
+                                    <button id="stopRecording" class="btn btn-secondary btn-lg px-4 d-none">
+                                        <i class="fas fa-stop-circle me-2"></i>Stop Recording
+                                    </button>
+                                </div>
                             </div>
                             
                             <div id="recordingResult" class="d-none">
                                 <div class="alert alert-success">
-                                    <i class="fas fa-check-circle me-2"></i>Recording completed!
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-check-circle me-2 fs-3"></i>
+                                        <div>
+                                            <h5 class="mb-1">Recording completed!</h5>
+                                            <p class="mb-0">You can now listen to your recording and analyze it.</p>
+                                        </div>
+                                    </div>
                                 </div>
                                 
-                                <audio id="recordedAudio" controls class="w-100 mb-3"></audio>
+                                <div class="audio-player-container p-3 border rounded mb-4 bg-dark">
+                                    <audio id="recordedAudio" controls class="w-100 mb-2"></audio>
+                                </div>
                                 
-                                <div class="d-grid gap-2">
-                                    <button id="analyzeRecording" class="btn btn-primary">
+                                <div class="d-flex gap-3">
+                                    <button id="analyzeRecording" class="btn btn-primary btn-lg flex-grow-1">
                                         <i class="fas fa-play-circle me-2"></i>Analyze Emotion
                                     </button>
                                     
                                     <button id="discardRecording" class="btn btn-outline-secondary">
-                                        <i class="fas fa-trash me-2"></i>Discard & Record Again
+                                        <i class="fas fa-trash me-2"></i>Discard
                                     </button>
                                 </div>
                             </div>
                             
                             <div id="recordingError" class="d-none">
                                 <div class="alert alert-danger">
-                                    <i class="fas fa-exclamation-triangle me-2"></i><span id="errorMessage">Error accessing microphone</span>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-exclamation-circle me-2 fs-3"></i>
+                                        <div>
+                                            <h5 class="mb-1">Recording Error</h5>
+                                            <p class="mb-0" id="errorMessage">Error accessing microphone</p>
+                                        </div>
+                                    </div>
                                 </div>
                                 <button id="retryRecording" class="btn btn-outline-secondary">
                                     <i class="fas fa-redo me-2"></i>Retry
@@ -142,36 +228,44 @@
                     <!-- History Tab -->
                     <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
                         <div class="text-center py-4">
-                            <a href="{{ url_for('history') }}" class="btn btn-primary">
-                                <i class="fas fa-history me-2"></i>View Emotion Analysis History
+                            <i class="fas fa-history fa-4x text-primary mb-3"></i>
+                            <h4 class="mb-3">View Your Analysis History</h4>
+                            <p class="mb-4">Access all your previous emotion recognition results in one place.</p>
+                            <a href="{{ url_for('history') }}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-history me-2"></i>View Analysis History
                             </a>
-                            <p class="text-muted mt-2">See your previous emotion predictions</p>
                         </div>
                     </div>
                 </div>
                 
-                <div class="alert alert-info mt-4">
-                    <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>How it works</h5>
-                    <p>Our system uses audio processing techniques and a deep learning model to identify emotions from speech patterns.</p>
-                    <hr>
-                    <p class="mb-0">The system can detect the following emotions: <strong>angry, disgust, fear, happy, neutral, sad, surprise</strong></p>
-                </div>
+                <hr class="my-4">
                 
-                <div class="accordion" id="featureAccordion">
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="headingOne">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                                Audio Processing Pipeline
-                            </button>
-                        </h2>
-                        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#featureAccordion">
-                            <div class="accordion-body">
-                                <ol>
-                                    <li><strong>Audio Preprocessing:</strong> Normalization, silence removal, and noise reduction</li>
-                                    <li><strong>Feature Extraction:</strong> MFCCs, spectral features, zero-crossing rate</li>
-                                    <li><strong>Deep Learning:</strong> Neural network for emotion classification</li>
-                                    <li><strong>Result Analysis:</strong> Confidence scores and visualization</li>
-                                </ol>
+                <div class="row">
+                    <div class="col-md-6 mb-4 mb-md-0">
+                        <div class="card h-100 border-0 bg-dark">
+                            <div class="card-body">
+                                <h4 class="mb-3"><i class="fas fa-info-circle me-2 text-primary"></i>How It Works</h4>
+                                <p>Our system uses advanced audio processing techniques and a neural network model to identify emotions from speech patterns.</p>
+                                <ul class="list-group list-group-flush bg-transparent mb-0">
+                                    <li class="list-group-item bg-transparent"><i class="fas fa-volume-up me-2 text-primary"></i> Audio Preprocessing</li>
+                                    <li class="list-group-item bg-transparent"><i class="fas fa-wave-square me-2 text-primary"></i> Feature Extraction</li>
+                                    <li class="list-group-item bg-transparent"><i class="fas fa-brain me-2 text-primary"></i> Neural Network Classification</li>
+                                    <li class="list-group-item bg-transparent"><i class="fas fa-chart-pie me-2 text-primary"></i> Confidence Analysis</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 bg-dark">
+                            <div class="card-body">
+                                <h4 class="mb-3"><i class="fas fa-lightbulb me-2 text-primary"></i>Tips for Best Results</h4>
+                                <ul class="list-group list-group-flush bg-transparent mb-0">
+                                    <li class="list-group-item bg-transparent"><i class="fas fa-check-circle me-2 text-success"></i> Use clear audio with minimal background noise</li>
+                                    <li class="list-group-item bg-transparent"><i class="fas fa-check-circle me-2 text-success"></i> Speak naturally with appropriate emotion</li>
+                                    <li class="list-group-item bg-transparent"><i class="fas fa-check-circle me-2 text-success"></i> Ideal recording length: 5-10 seconds</li>
+                                    <li class="list-group-item bg-transparent"><i class="fas fa-check-circle me-2 text-success"></i> For best results, use WAV format audio</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
