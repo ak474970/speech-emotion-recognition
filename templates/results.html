@@ -2,135 +2,355 @@
 
 {% block title %}Results{% endblock %}
 
+{% block head %}
+<style>
+    .emotion-badge {
+        font-size: 1.1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+    }
+    
+    .result-card {
+        border-radius: 12px;
+        overflow: hidden;
+        height: 100%;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        border: none;
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-left: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 2px;
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .timeline-dot {
+        position: absolute;
+        left: -6px;
+        top: 0;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4890eb, #2c5ce0);
+    }
+    
+    .audio-visual-container {
+        border-radius: 12px;
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 1rem;
+    }
+    
+    .confidence-bar {
+        height: 8px;
+        border-radius: 4px;
+        margin-bottom: 1.5rem;
+        transition: width 1s ease-in-out;
+    }
+    
+    @keyframes growWidth {
+        from { width: 0; }
+        to { width: var(--final-width); }
+    }
+    
+    .grow-animation {
+        animation: growWidth 1.5s ease-out forwards;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-10">
         <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">Emotion Recognition Results</h2>
-                {% if timestamp %}
-                <span class="text-light"><i class="fas fa-clock me-1"></i> {{ timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span>
-                {% endif %}
+            <div class="card-header">
+                <div class="d-flex flex-wrap justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-1">Emotion <span class="header-highlight">Analysis</span> Results</h2>
+                        <p class="text-muted mb-0">
+                            Detailed breakdown of the detected emotion
+                        </p>
+                    </div>
+                    {% if timestamp %}
+                    <div class="d-flex align-items-center bg-dark px-3 py-2 rounded">
+                        <i class="fas fa-clock text-primary me-2"></i>
+                        <span>{{ timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
             <div class="card-body">
-                <div class="row mb-4">
-                    <div class="col-md-6 text-center">
-                        <div class="emotion-result p-4 rounded">
-                            <h3 class="mb-3">Detected Emotion</h3>
-                            <div class="detected-emotion mb-3">
-                                {% if prediction == 'happy' %}
-                                    <i class="fas fa-smile-beam emotion-icon text-success"></i>
-                                {% elif prediction == 'sad' %}
-                                    <i class="fas fa-sad-tear emotion-icon text-info"></i>
-                                {% elif prediction == 'angry' %}
-                                    <i class="fas fa-angry emotion-icon text-danger"></i>
-                                {% elif prediction == 'fear' %}
-                                    <i class="fas fa-grimace emotion-icon text-warning"></i>
-                                {% elif prediction == 'disgust' %}
-                                    <i class="fas fa-dizzy emotion-icon text-muted"></i>
-                                {% elif prediction == 'surprise' %}
-                                    <i class="fas fa-surprise emotion-icon text-primary"></i>
-                                {% else %}
-                                    <i class="fas fa-meh emotion-icon text-secondary"></i>
-                                {% endif %}
+                {% set emotion_classes = {
+                    'happy': 'success', 
+                    'sad': 'info', 
+                    'angry': 'danger',
+                    'fear': 'warning',
+                    'disgust': 'secondary',
+                    'surprise': 'primary',
+                    'neutral': 'light'
+                } %}
+                
+                {% set emotion_icons = {
+                    'happy': 'smile-beam', 
+                    'sad': 'sad-tear', 
+                    'angry': 'angry',
+                    'fear': 'grimace',
+                    'disgust': 'dizzy',
+                    'surprise': 'surprise',
+                    'neutral': 'meh'
+                } %}
+                
+                <div class="row mb-5">
+                    <div class="col-md-6 mb-4 mb-md-0">
+                        <div class="emotion-result p-4 rounded text-center">
+                            <div class="mb-3">
+                                <span class="badge bg-{{ emotion_classes.get(prediction.lower(), 'primary') }} emotion-badge mb-3">
+                                    <i class="fas fa-headphones-alt me-2"></i>
+                                    {% if is_recorded %}
+                                        Voice Recording
+                                    {% elif is_sample %}
+                                        Sample: {{ sample_name }}
+                                    {% else %}
+                                        Uploaded Audio
+                                    {% endif %}
+                                </span>
                             </div>
-                            <h4 class="emotion-text">{{ prediction|title }}</h4>
                             
-                            {% if is_recorded %}
-                            <div class="mt-3">
-                                <span class="badge bg-info p-2"><i class="fas fa-microphone me-1"></i> Recorded Audio</span>
+                            <h3 class="mb-4">Primary Emotion Detected</h3>
+                            
+                            <div class="detected-emotion mb-4">
+                                <i class="fas fa-{{ emotion_icons.get(prediction.lower(), 'meh') }} emotion-icon text-{{ emotion_classes.get(prediction.lower(), 'primary') }}"></i>
                             </div>
-                            {% elif is_sample %}
-                            <div class="mt-3">
-                                <span class="badge bg-secondary p-2"><i class="fas fa-music me-1"></i> Sample: {{ sample_name }}</span>
+                            
+                            <h2 class="emotion-text mb-3">{{ prediction|title }}</h2>
+                            
+                            <div class="mt-4 d-flex justify-content-center">
+                                <a href="{{ url_for('index') }}" class="btn btn-primary me-2">
+                                    <i class="fas fa-plus-circle me-2"></i>New Analysis
+                                </a>
+                                <a href="{{ url_for('history') }}" class="btn btn-secondary">
+                                    <i class="fas fa-history me-2"></i>View History
+                                </a>
                             </div>
-                            {% endif %}
                         </div>
                     </div>
+                    
                     <div class="col-md-6">
-                        <h3 class="mb-3 text-center">Confidence Analysis</h3>
-                        <div class="chart-container">
-                            {% if chart %}
-                                <img src="data:image/png;base64,{{ chart }}" alt="Emotion confidence chart" class="img-fluid">
-                            {% else %}
-                                <div class="alert alert-warning">Chart generation failed</div>
-                            {% endif %}
+                        <div class="card result-card h-100">
+                            <div class="card-header bg-dark">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-chart-pie me-2 text-primary"></i>
+                                    Confidence Analysis
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                {% if all_confidences %}
+                                    <div id="confidenceBars">
+                                        {% for emotion, confidence in all_confidences.items() %}
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <span>
+                                                        <i class="fas fa-{{ emotion_icons.get(emotion.lower(), 'meh') }} 
+                                                        text-{{ emotion_classes.get(emotion.lower(), 'primary') }} me-2"></i>
+                                                        {{ emotion|title }}
+                                                    </span>
+                                                    <span class="fw-bold confidence-value">{{ (confidence * 100)|round(1) }}%</span>
+                                                </div>
+                                                <div class="progress" style="height: 8px;">
+                                                    <div class="progress-bar bg-{{ emotion_classes.get(emotion.lower(), 'primary') }} confidence-bar" 
+                                                        role="progressbar" 
+                                                        style="--final-width: {{ confidence * 100 }}%;"
+                                                        aria-valuenow="{{ confidence * 100 }}" 
+                                                        aria-valuemin="0" 
+                                                        aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% elif chart %}
+                                    <div class="chart-container">
+                                        <img src="data:image/png;base64,{{ chart }}" alt="Emotion confidence chart" class="img-fluid">
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        Chart data unavailable
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="row mb-4">
+                <div class="row mb-5">
                     <div class="col-12">
-                        <h3 class="mb-3 text-center">Audio Visualization</h3>
-                        
-                        <ul class="nav nav-tabs" id="audioTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="waveform-tab" data-bs-toggle="tab" 
-                                        data-bs-target="#waveform" type="button" role="tab" 
-                                        aria-controls="waveform" aria-selected="true">
-                                    <i class="fas fa-wave-square me-1"></i> Waveform
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="spectrogram-tab" data-bs-toggle="tab" 
-                                        data-bs-target="#spectrogram" type="button" role="tab" 
-                                        aria-controls="spectrogram" aria-selected="false">
-                                    <i class="fas fa-chart-area me-1"></i> Spectrogram
-                                </button>
-                            </li>
-                        </ul>
-                        
-                        <div class="tab-content p-3 border border-top-0 rounded-bottom" id="audioTabsContent">
-                            <div class="tab-pane fade show active" id="waveform" role="tabpanel" aria-labelledby="waveform-tab">
-                                <div class="chart-container">
-                                    {% if waveform_chart %}
-                                        <img src="data:image/png;base64,{{ waveform_chart }}" alt="Audio waveform" class="img-fluid">
-                                    {% else %}
-                                        <div class="alert alert-warning">Waveform visualization not available</div>
-                                    {% endif %}
-                                </div>
-                                <p class="text-muted mt-2">
-                                    <i class="fas fa-info-circle me-1"></i> The waveform shows the amplitude of the sound over time.
-                                </p>
+                        <div class="card result-card">
+                            <div class="card-header bg-dark">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-wave-square me-2 text-primary"></i>
+                                    Audio Visualization
+                                </h4>
                             </div>
-                            <div class="tab-pane fade" id="spectrogram" role="tabpanel" aria-labelledby="spectrogram-tab">
-                                <div class="chart-container">
-                                    {% if spectrogram_chart %}
-                                        <img src="data:image/png;base64,{{ spectrogram_chart }}" alt="Audio spectrogram" class="img-fluid">
-                                    {% else %}
-                                        <div class="alert alert-warning">Spectrogram visualization not available</div>
-                                    {% endif %}
+                            <div class="card-body">
+                                <ul class="nav nav-tabs" id="audioTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="waveform-tab" data-bs-toggle="tab" 
+                                                data-bs-target="#waveform" type="button" role="tab" 
+                                                aria-controls="waveform" aria-selected="true">
+                                            <i class="fas fa-wave-square me-1"></i> Waveform
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="spectrogram-tab" data-bs-toggle="tab" 
+                                                data-bs-target="#spectrogram" type="button" role="tab" 
+                                                aria-controls="spectrogram" aria-selected="false">
+                                            <i class="fas fa-chart-area me-1"></i> Spectrogram
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content p-3" id="audioTabsContent">
+                                    <div class="tab-pane fade show active" id="waveform" role="tabpanel" aria-labelledby="waveform-tab">
+                                        <div class="audio-visual-container">
+                                            {% if waveform_chart %}
+                                                <img src="data:image/png;base64,{{ waveform_chart }}" alt="Audio waveform" class="img-fluid">
+                                            {% else %}
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                                    Waveform visualization not available
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-muted mt-3">
+                                            <i class="fas fa-info-circle me-2"></i> The waveform shows amplitude (volume) changes over time, revealing speech patterns and emotional intensity.
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="tab-pane fade" id="spectrogram" role="tabpanel" aria-labelledby="spectrogram-tab">
+                                        <div class="audio-visual-container">
+                                            {% if spectrogram_chart %}
+                                                <img src="data:image/png;base64,{{ spectrogram_chart }}" alt="Audio spectrogram" class="img-fluid">
+                                            {% else %}
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                                    Spectrogram visualization not available
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-muted mt-3">
+                                            <i class="fas fa-info-circle me-2"></i> The spectrogram displays frequency components over time, showing tonal variations often associated with emotional states.
+                                        </p>
+                                    </div>
                                 </div>
-                                <p class="text-muted mt-2">
-                                    <i class="fas fa-info-circle me-1"></i> The spectrogram shows the spectrum of frequencies as they vary with time.
-                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="row">
-                    <div class="col-12">
-                        <div class="alert alert-info">
-                            <h5><i class="fas fa-info-circle me-2"></i>About This Analysis</h5>
-                            <p>
-                                The system has analyzed the audio using acoustic feature extraction and a deep learning model. 
-                                The dominant emotion detected is <strong>{{ prediction }}</strong>.
-                            </p>
-                            <p>
-                                The chart shows the confidence level for each emotion category. Higher values represent greater confidence.
-                            </p>
+                    <div class="col-md-7 mb-4 mb-md-0">
+                        <div class="card result-card h-100">
+                            <div class="card-header bg-dark">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-brain me-2 text-primary"></i>
+                                    Analysis Details
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="timeline">
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <h5>Audio Processing</h5>
+                                        <p class="text-muted">The system preprocessed the audio by normalizing, removing silence, and reducing noise to enhance the signal quality.</p>
+                                    </div>
+                                    
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <h5>Feature Extraction</h5>
+                                        <p class="text-muted">Acoustic features including MFCCs, spectral features, and zero-crossing rate were extracted to capture emotion-related patterns.</p>
+                                    </div>
+                                    
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <h5>Emotion Classification</h5>
+                                        <p class="text-muted">A neural network model analyzed the extracted features to classify the dominant emotion in the speech sample.</p>
+                                    </div>
+                                    
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <h5>Result Generation</h5>
+                                        <p class="text-muted">The system identified <strong>{{ prediction|title }}</strong> as the primary emotion with {{ all_confidences[prediction.lower()]|float * 100 if all_confidences else 'high' }}% confidence.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-5">
+                        <div class="card result-card h-100">
+                            <div class="card-header bg-dark">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-info-circle me-2 text-primary"></i>
+                                    About This Emotion
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                {% set emotion_descriptions = {
+                                    'happy': 'Happiness in speech is characterized by higher pitch, faster tempo, and increased energy. The voice typically sounds bright and energetic with clear articulation.',
+                                    'sad': 'Sadness is expressed through lower pitch, slower speech rate, and decreased energy levels. The voice often sounds monotonous with less variation in tone.',
+                                    'angry': 'Anger features higher intensity, increased pitch range, and faster speaking rate. Speech tends to be louder with sharp, abrupt articulation and strong stress patterns.',
+                                    'fear': 'Fear is marked by irregular rhythm, higher pitch, and vocal trembling. The voice may sound breathy with irregular pauses and hesitations.',
+                                    'disgust': 'Disgust typically manifests as a lower pitch with distinctive nasal quality. Speech may include elongated sounds and particular emphasis on certain syllables.',
+                                    'surprise': 'Surprise is characterized by sudden rises in pitch, increased loudness, and often followed by pauses. The speech pattern shows rapid changes in tempo and energy.',
+                                    'neutral': 'Neutral speech displays balanced acoustic properties without extreme variations in pitch, rhythm, or intensity. The voice maintains consistent energy throughout.'
+                                } %}
+                                
+                                <div class="d-flex mb-4">
+                                    <div class="display-5 me-3 text-{{ emotion_classes.get(prediction.lower(), 'primary') }}">
+                                        <i class="fas fa-{{ emotion_icons.get(prediction.lower(), 'meh') }}"></i>
+                                    </div>
+                                    <div>
+                                        <h5>{{ prediction|title }} Voice Characteristics</h5>
+                                        <p class="text-muted mb-0">{{ emotion_descriptions.get(prediction.lower(), 'This emotion has distinctive acoustic patterns that our system has identified in your speech sample.') }}</p>
+                                    </div>
+                                </div>
+                                
+                                <hr class="my-3">
+                                
+                                <p class="mb-0">
+                                    <i class="fas fa-lightbulb text-warning me-2"></i>
+                                    Voice emotion recognition can be used in various applications including customer service quality monitoring, mental health assessment, interactive entertainment, and more.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="row mt-4">
-                    <div class="col-12 d-flex justify-content-center gap-2">
-                        <a href="{{ url_for('index') }}" class="btn btn-primary">
-                            <i class="fas fa-microphone me-2"></i>Analyze Another Audio
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <div class="mb-3 mb-md-0">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary me-2">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Home
                         </a>
-                        <a href="{{ url_for('history') }}" class="btn btn-secondary">
-                            <i class="fas fa-history me-2"></i>View History
+                        <a href="{{ url_for('history') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-history me-2"></i>View All Results
+                        </a>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">
+                            <i class="fas fa-microphone me-2"></i>New Analysis
                         </a>
                     </div>
                 </div>
@@ -142,10 +362,59 @@
 
 {% block scripts %}
 <script>
-    // Animation for emotion display
     document.addEventListener('DOMContentLoaded', function() {
+        // Animation for emotion display
         const emotionElement = document.querySelector('.detected-emotion');
-        emotionElement.classList.add('emotion-animate');
+        if (emotionElement) {
+            emotionElement.classList.add('emotion-animate');
+        }
+        
+        // Animate confidence bars
+        setTimeout(() => {
+            const confidenceBars = document.querySelectorAll('.confidence-bar');
+            if (confidenceBars) {
+                confidenceBars.forEach((bar, index) => {
+                    setTimeout(() => {
+                        bar.classList.add('grow-animation');
+                    }, index * 200);
+                });
+            }
+        }, 500);
+        
+        // Animation for timeline items
+        const timelineItems = document.querySelectorAll('.timeline-item');
+        if (timelineItems) {
+            timelineItems.forEach((item, index) => {
+                item.style.opacity = '0';
+                item.style.transform = 'translateX(-10px)';
+                item.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateX(0)';
+                }, 300 + (index * 200));
+            });
+        }
+        
+        // Tab switching animation
+        const audioTabs = document.querySelectorAll('#audioTabs button');
+        if (audioTabs.length > 0) {
+            audioTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabPanes = document.querySelectorAll('.tab-pane');
+                    tabPanes.forEach(pane => {
+                        pane.style.animation = 'none';
+                    });
+                    
+                    setTimeout(() => {
+                        const tabContent = document.querySelector(this.dataset.bsTarget);
+                        if (tabContent) {
+                            tabContent.style.animation = 'fadeIn 0.4s forwards';
+                        }
+                    }, 50);
+                });
+            });
+        }
     });
 </script>
 {% endblock %}
