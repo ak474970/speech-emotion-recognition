@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block head %}
+<style>
+    #recordingIndicator {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: red;
+        display: inline-block;
+        margin-right: 10px;
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.3; }
+        100% { opacity: 1; }
+    }
+    
+    .recorder-container {
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        background-color: var(--bs-dark-bg-subtle);
+    }
+    
+    .tab-pane {
+        padding: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">Speech Emotion Recognition</h2>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-microphone fa-4x mb-3 text-primary"></i>
+                    <p class="lead">Analyze speech to detect emotions using audio processing and machine learning.</p>
+                </div>
+                
+                <ul class="nav nav-tabs" id="inputTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="upload-tab" data-bs-toggle="tab" 
+                                data-bs-target="#upload" type="button" role="tab" 
+                                aria-controls="upload" aria-selected="true">
+                            <i class="fas fa-upload me-1"></i> Upload Audio
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="record-tab" data-bs-toggle="tab" 
+                                data-bs-target="#record" type="button" role="tab" 
+                                aria-controls="record" aria-selected="false">
+                            <i class="fas fa-microphone me-1"></i> Record Audio
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="history-tab" data-bs-toggle="tab" 
+                                data-bs-target="#history" type="button" role="tab" 
+                                aria-controls="history" aria-selected="false">
+                            <i class="fas fa-history me-1"></i> History
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="inputTabsContent">
+                    <!-- Upload Tab -->
+                    <div class="tab-pane fade show active" id="upload" role="tabpanel" aria-labelledby="upload-tab">
+                        <form action="{{ url_for('predict') }}" method="post" enctype="multipart/form-data" class="mb-4">
+                            <div class="mb-3">
+                                <label for="audioFile" class="form-label">Select Audio File</label>
+                                <input class="form-control" type="file" id="audioFile" name="file" accept=".wav,.mp3,.ogg" required>
+                                <div class="form-text">Supported formats: WAV, MP3, OGG (max size: 16MB)</div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-play-circle me-2"></i>Analyze Emotion
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Record Tab -->
+                    <div class="tab-pane fade" id="record" role="tabpanel" aria-labelledby="record-tab">
+                        <div class="recorder-container text-center">
+                            <div id="recordingStatus" class="mb-3 d-none">
+                                <span id="recordingIndicator"></span>
+                                <span class="fw-bold">Recording...</span>
+                                <span id="recordingTime">00:00</span>
+                            </div>
+                            
+                            <div id="recordingControls">
+                                <button id="startRecording" class="btn btn-danger btn-lg mb-3">
+                                    <i class="fas fa-microphone me-2"></i>Start Recording
+                                </button>
+                                
+                                <button id="stopRecording" class="btn btn-secondary btn-lg mb-3 d-none">
+                                    <i class="fas fa-stop-circle me-2"></i>Stop Recording
+                                </button>
+                                
+                                <p class="text-muted small">Record up to 30 seconds of speech</p>
+                            </div>
+                            
+                            <div id="recordingResult" class="d-none">
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i>Recording completed!
+                                </div>
+                                
+                                <audio id="recordedAudio" controls class="w-100 mb-3"></audio>
+                                
+                                <div class="d-grid gap-2">
+                                    <button id="analyzeRecording" class="btn btn-primary">
+                                        <i class="fas fa-play-circle me-2"></i>Analyze Emotion
+                                    </button>
+                                    
+                                    <button id="discardRecording" class="btn btn-outline-secondary">
+                                        <i class="fas fa-trash me-2"></i>Discard & Record Again
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="recordingError" class="d-none">
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle me-2"></i><span id="errorMessage">Error accessing microphone</span>
+                                </div>
+                                <button id="retryRecording" class="btn btn-outline-secondary">
+                                    <i class="fas fa-redo me-2"></i>Retry
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- History Tab -->
+                    <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+                        <div class="text-center py-4">
+                            <a href="{{ url_for('history') }}" class="btn btn-primary">
+                                <i class="fas fa-history me-2"></i>View Emotion Analysis History
+                            </a>
+                            <p class="text-muted mt-2">See your previous emotion predictions</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-4">
+                    <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>How it works</h5>
+                    <p>Our system uses audio processing techniques and a deep learning model to identify emotions from speech patterns.</p>
+                    <hr>
+                    <p class="mb-0">The system can detect the following emotions: <strong>angry, disgust, fear, happy, neutral, sad, surprise</strong></p>
+                </div>
+                
+                <div class="accordion" id="featureAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                Audio Processing Pipeline
+                            </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#featureAccordion">
+                            <div class="accordion-body">
+                                <ol>
+                                    <li><strong>Audio Preprocessing:</strong> Normalization, silence removal, and noise reduction</li>
+                                    <li><strong>Feature Extraction:</strong> MFCCs, spectral features, zero-crossing rate</li>
+                                    <li><strong>Deep Learning:</strong> Neural network for emotion classification</li>
+                                    <li><strong>Result Analysis:</strong> Confidence scores and visualization</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Audio recording functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        let mediaRecorder;
+        let audioChunks = [];
+        let recordingTimer;
+        let recordingSeconds = 0;
+        let audioBlob;
+        let audioUrl;
+        
+        const startButton = document.getElementById('startRecording');
+        const stopButton = document.getElementById('stopRecording');
+        const recordingStatus = document.getElementById('recordingStatus');
+        const recordingTime = document.getElementById('recordingTime');
+        const recordingControls = document.getElementById('recordingControls');
+        const recordingResult = document.getElementById('recordingResult');
+        const recordingError = document.getElementById('recordingError');
+        const errorMessage = document.getElementById('errorMessage');
+        const recordedAudio = document.getElementById('recordedAudio');
+        const analyzeButton = document.getElementById('analyzeRecording');
+        const discardButton = document.getElementById('discardRecording');
+        const retryButton = document.getElementById('retryRecording');
+        
+        // Recording timer
+        function updateRecordingTime() {
+            recordingSeconds++;
+            const minutes = Math.floor(recordingSeconds / 60).toString().padStart(2, '0');
+            const seconds = (recordingSeconds % 60).toString().padStart(2, '0');
+            recordingTime.textContent = `${minutes}:${seconds}`;
+            
+            // Maximum recording time: 30 seconds
+            if (recordingSeconds >= 30) {
+                stopRecording();
+            }
+        }
+        
+        function startRecording() {
+            audioChunks = [];
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    recordingStatus.classList.remove('d-none');
+                    startButton.classList.add('d-none');
+                    stopButton.classList.remove('d-none');
+                    recordingResult.classList.add('d-none');
+                    recordingError.classList.add('d-none');
+                    
+                    // Reset timer
+                    recordingSeconds = 0;
+                    recordingTime.textContent = '00:00';
+                    recordingTimer = setInterval(updateRecordingTime, 1000);
+                    
+                    // Create media recorder
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+                    
+                    mediaRecorder.onstop = () => {
+                        clearInterval(recordingTimer);
+                        
+                        // Create audio blob and URL
+                        audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        audioUrl = URL.createObjectURL(audioBlob);
+                        recordedAudio.src = audioUrl;
+                        
+                        // Show recording result
+                        recordingStatus.classList.add('d-none');
+                        recordingControls.classList.add('d-none');
+                        recordingResult.classList.remove('d-none');
+                    };
+                    
+                    mediaRecorder.start();
+                })
+                .catch(error => {
+                    console.error('Error accessing microphone:', error);
+                    errorMessage.textContent = 'Error accessing microphone: ' + error.message;
+                    recordingError.classList.remove('d-none');
+                    recordingControls.classList.add('d-none');
+                });
+        }
+        
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+        }
+        
+        function discardRecording() {
+            // Reset UI
+            recordingResult.classList.add('d-none');
+            recordingControls.classList.remove('d-none');
+            startButton.classList.remove('d-none');
+            stopButton.classList.add('d-none');
+            
+            // Revoke object URL
+            if (audioUrl) {
+                URL.revokeObjectURL(audioUrl);
+                audioUrl = null;
+            }
+        }
+        
+        function analyzeRecording() {
+            if (!audioBlob) {
+                return;
+            }
+            
+            // Create a loading state
+            analyzeButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            analyzeButton.disabled = true;
+            discardButton.disabled = true;
+            
+            // Create a FileReader to convert the blob to base64
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                // Send the audio data to the server
+                fetch('/record', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        audio: reader.result
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.redirect) {
+                        // Redirect to results page
+                        window.location.href = data.redirect;
+                    } else {
+                        // Show error
+                        throw new Error(data.error || 'Error processing recording');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error analyzing recording:', error);
+                    errorMessage.textContent = error.message || 'Error analyzing recording';
+                    recordingResult.classList.add('d-none');
+                    recordingError.classList.remove('d-none');
+                    
+                    // Reset buttons
+                    analyzeButton.innerHTML = '<i class="fas fa-play-circle me-2"></i>Analyze Emotion';
+                    analyzeButton.disabled = false;
+                    discardButton.disabled = false;
+                });
+            };
+            
+            // Read the audio blob as data URL
+            reader.readAsDataURL(audioBlob);
+        }
+        
+        // Event listeners
+        if (startButton) {
+            startButton.addEventListener('click', startRecording);
+        }
+        
+        if (stopButton) {
+            stopButton.addEventListener('click', stopRecording);
+        }
+        
+        if (discardButton) {
+            discardButton.addEventListener('click', discardRecording);
+        }
+        
+        if (analyzeButton) {
+            analyzeButton.addEventListener('click', analyzeRecording);
+        }
+        
+        if (retryButton) {
+            retryButton.addEventListener('click', function() {
+                recordingError.classList.add('d-none');
+                recordingControls.classList.remove('d-none');
+            });
+        }
+        
+        // Switch to the Record tab if coming from a recording error
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('tab') === 'record') {
+            const recordTab = document.getElementById('record-tab');
+            if (recordTab) {
+                const tabInstance = new bootstrap.Tab(recordTab);
+                tabInstance.show();
+            }
+        }
+    });
+</script>
+{% endblock %}
