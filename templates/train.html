@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Train Model{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">Train Emotion Recognition Model</h2>
+            </div>
+            <div class="card-body">
+                
+                {% if trained %}
+                <!-- Training Results Section -->
+                <div class="alert alert-success mb-4">
+                    <h4 class="alert-heading"><i class="fas fa-check-circle me-2"></i>Training Complete!</h4>
+                    <p>The model has been trained successfully. Validation accuracy: <strong>{{ accuracy|round(2) }}%</strong></p>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h4 class="mb-3">Confusion Matrix</h4>
+                        <div class="chart-container">
+                            {% if cm_chart %}
+                                <img src="data:image/png;base64,{{ cm_chart }}" alt="Confusion matrix" class="img-fluid">
+                            {% else %}
+                                <div class="alert alert-warning">Chart generation failed</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h4 class="mb-3">Training History</h4>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Epoch</th>
+                                    <th>Training Loss</th>
+                                    <th>Training Accuracy</th>
+                                    <th>Validation Loss</th>
+                                    <th>Validation Accuracy</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in range(history.accuracy|length) %}
+                                <tr>
+                                    <td>{{ i+1 }}</td>
+                                    <td>{{ history.loss[i]|round(4) }}</td>
+                                    <td>{{ (history.accuracy[i] * 100)|round(2) }}%</td>
+                                    <td>{{ history.val_loss[i]|round(4) }}</td>
+                                    <td>{{ (history.val_accuracy[i] * 100)|round(2) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <a href="{{ url_for('train_page') }}" class="btn btn-primary">
+                            <i class="fas fa-sync me-2"></i>Train Again
+                        </a>
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary ms-2">
+                            <i class="fas fa-microphone me-2"></i>Test Model
+                        </a>
+                    </div>
+                </div>
+                
+                {% else %}
+                <!-- Training Form Section -->
+                <div class="alert alert-info mb-4">
+                    <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>About Model Training</h5>
+                    <p>
+                        This page allows you to train the LSTM-based emotion recognition model. 
+                        In a production environment, you would upload your labeled dataset and configure training parameters.
+                    </p>
+                    <p class="mb-0">
+                        For this demonstration, the training will use a simulated dataset to show the training process.
+                    </p>
+                </div>
+                
+                <form action="{{ url_for('start_training') }}" method="post" class="mb-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="epochs" class="form-label">Number of Epochs</label>
+                                <input type="number" class="form-control" id="epochs" name="epochs" min="1" max="100" value="10" required>
+                                <div class="form-text">Number of complete passes through the training dataset</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="batchSize" class="form-label">Batch Size</label>
+                                <select class="form-select" id="batchSize" name="batch_size">
+                                    <option value="16">16</option>
+                                    <option value="32" selected>32</option>
+                                    <option value="64">64</option>
+                                    <option value="128">128</option>
+                                </select>
+                                <div class="form-text">Number of samples per gradient update</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion mb-4" id="modelAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingModel">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseModel" aria-expanded="false" aria-controls="collapseModel">
+                                    Advanced Model Settings
+                                </button>
+                            </h2>
+                            <div id="collapseModel" class="accordion-collapse collapse" aria-labelledby="headingModel" data-bs-parent="#modelAccordion">
+                                <div class="accordion-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="learningRate" class="form-label">Learning Rate</label>
+                                                <select class="form-select" id="learningRate" name="learning_rate">
+                                                    <option value="0.01">0.01</option>
+                                                    <option value="0.001" selected>0.001</option>
+                                                    <option value="0.0001">0.0001</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="dropout" class="form-label">Dropout Rate</label>
+                                                <select class="form-select" id="dropout" name="dropout">
+                                                    <option value="0.2">0.2</option>
+                                                    <option value="0.3" selected>0.3</option>
+                                                    <option value="0.5">0.5</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary" id="trainButton">
+                            <i class="fas fa-cogs me-2"></i>Start Training
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="card mt-4">
+                    <div class="card-header bg-secondary text-white">
+                        Model Architecture
+                    </div>
+                    <div class="card-body">
+                        <h5>LSTM-based Emotion Recognition Model</h5>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <i class="fas fa-layer-group me-2"></i><strong>Input Layer:</strong> Time series of audio features
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-layer-group me-2"></i><strong>LSTM Layer 1:</strong> 128 units with batch normalization and dropout
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-layer-group me-2"></i><strong>LSTM Layer 2:</strong> 64 units with batch normalization and dropout
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-layer-group me-2"></i><strong>Dense Layer:</strong> 64 units with ReLU activation
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-layer-group me-2"></i><strong>Output Layer:</strong> 7 units with softmax activation (one per emotion)
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+                
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Show loading indicator when training starts
+    document.addEventListener('DOMContentLoaded', function() {
+        const trainForm = document.querySelector('form');
+        const trainButton = document.getElementById('trainButton');
+        
+        if (trainForm && trainButton) {
+            trainForm.addEventListener('submit', function() {
+                trainButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Training...';
+                trainButton.disabled = true;
+            });
+        }
+    });
+</script>
+{% endblock %}
